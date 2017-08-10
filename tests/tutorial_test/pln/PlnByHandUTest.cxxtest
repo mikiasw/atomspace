@@ -1,0 +1,123 @@
+#include <opencog/guile/SchemeEval.h>
+#include <opencog/guile/SchemeSmob.h>
+#include <opencog/atoms/base/Handle.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/rule-engine/Rule.h>
+#include <opencog/util/Logger.h>
+#include <opencog/util/algorithm.h>
+#include <opencog/query/BindLinkAPI.h>
+#include <cxxtest/TestSuite.h>
+#include <string>
+#include <vector>
+
+using namespace std;
+using namespace opencog;
+using namespace std;
+
+class PlnByHandUTest: public CxxTest::TestSuite
+{
+private:
+	AtomSpace as;
+	SchemeEval eval;
+
+public:
+	PlnByHandUTest() : eval(&as)
+	{
+		logger().set_level(Logger::DEBUG);
+		logger().set_timestamp_flag(false);
+		logger().set_print_to_stdout_flag(true);
+
+		string cur_ppp_dir = string(PROJECT_SOURCE_DIR),
+			cur_dir = cur_ppp_dir + "/tests/rule-engine";
+		vector<string> load_paths = {cur_ppp_dir, cur_dir};
+		for (string& p : load_paths)
+		{
+			string eval_str = string("(add-to-load-path \"") + p + string("\")");
+			eval.eval(eval_str);
+		}
+
+		eval.eval("(add-to-load-path \"/usr/local/share\")");
+		eval.eval("(use-modules (opencog))");
+		eval.eval("(use-modules (opencog query))");
+		eval.eval("(use-modules (opencog logger))");
+		eval.eval("(use-modules (opencog rule-engine))");
+		eval.eval("(use-modules (srfi srfi-1))");
+	}
+
+	~PlnByHandUTest()
+	{
+		// Erase the log file if no assertions failed.
+		if (!CxxTest::TestTracker::tracker().suiteFailed())
+			std::remove(logger().get_filename().c_str());
+	}
+	void setUp();
+	void tearDown();
+	void load_scm_files(std::vector<std::string>);
+
+	void test_deduction();
+	
+
+};
+
+void PlnByHandUTest::tearDown()
+{
+}
+
+void PlnByHandUTest::setUp()
+{
+	as.clear();
+}
+
+void PlnByHandUTest::load_scm_files(std::vector<std::string> files)
+{
+	std::string hd("(load-from-path \"");
+	std::string tl("\")");
+	for (auto f: files) {
+		string result = eval.eval(hd + f + tl);
+		logger().debug() << "[PlnByHandUTest] Loaded \"" << f << "\":"
+		                 << std::endl << result;
+	}
+}
+
+#define getarity(hand) LinkCast(hand)->getArity()
+
+/**
+ * tests the deduction rule (deduction-rule) defined in:
+ * opencog/pln/rules/term/deduction.scm
+ */
+void PlnByHandUTest::test_deduction()
+{
+	logger().debug("BEGIN TEST: %s", __FUNCTION__);
+
+	load_scm_files({"tests/rule-engine/deduction-rule.scm",
+			"tests/rule-engine/simple-assertions.scm"
+				    });
+
+	Handle results;
+
+	// Observe that there is only one instance of human defined.
+	// To start with, it should only know that men are humans
+	results = eval.eval_h("(cog-bind find-humans)");
+	TS_ASSERT_EQUALS(1, getarity(results));
+
+	// Apply the rule,  creates new relationships
+	results = eval.eval_h("(cog-bind deduction-inheritance-rule)");
+	logger().debug() << "results = " << results->toString();
+	// test 
+	TS_ASSERT_EQUALS(4, getarity(results));
+
+	// After applying the deduction rule, it should know that all 4 of the
+	// instances of men are also humans (Socrates, Einstein, Peirce and Mika)
+	results = eval.eval_h("(cog-bind find-humans)");
+
+	logger().debug() << "results = " << results->toString();
+
+	// running the cog-bind find-humans and testing 
+	//5 in total, man, Peirce, Einstein, Socrates and mika
+	TS_ASSERT_EQUALS(5, getarity(results));
+
+logger().debug("END TEST: %s", __FUNCTION__);
+
+}
+
+

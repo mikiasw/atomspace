@@ -5,6 +5,8 @@
 (ConceptNode "Peirce" (stv .001 0.9))
 (ConceptNode "man" (stv .01 0.9))
 (ConceptNode "human" (stv .02 0.9))
+(ConceptNode "mika" (stv .01 0.9))
+
 
 ; Define the instances of man
 
@@ -19,6 +21,13 @@
 (InheritanceLink (stv 0.9 0.9)
     (ConceptNode "Peirce")
     (ConceptNode "man"))
+
+
+; new instances of man 
+(InheritanceLink (stv 0.9 0.9)
+    (ConceptNode "mika")
+    (ConceptNode "man"))
+
 
 ; Define what man is part of
 

@@ -1,0 +1,124 @@
+#include <opencog/rule-engine/backwardchainer/BackwardChainer.h>
+#include <opencog/rule-engine/backwardchainer/BackwardChainerPMCB.h>
+#include <opencog/guile/SchemeEval.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/pattern/PatternLink.h>
+#include <opencog/util/mt19937ar.h>
+
+#include <cxxtest/TestSuite.h>
+
+using namespace std;
+using namespace opencog;
+
+//#define DEBUG 1
+
+#define al _as.add_link
+#define an _as.add_node
+
+
+class PLNBackwardChainingUTest: public CxxTest::TestSuite
+{
+private:
+	AtomSpace _as;
+	SchemeEval _eval;
+	BackwardChainer* _bc;
+
+	void reset_bc();
+
+public:
+	PLNBackwardChainingUTest() : _eval(&_as)
+	{
+		logger().set_level(Logger::DEBUG);
+		logger().set_timestamp_flag(false);
+		// logger().set_sync_flag(true);
+		// logger().set_print_to_stdout_flag(true);
+		randGen().seed(0);
+	
+	
+	}
+	
+	~PLNBackwardChainingUTest()
+	{
+		// Erase the log file if no assertions failed.
+		if (!CxxTest::TestTracker::tracker().suiteFailed())
+			std::remove(logger().get_filename().c_str());
+	}
+	void setUp();
+	void tearDown();
+	void load_scm_files(std::vector<std::string>);
+	void test_backward_chaining();
+};
+void PLNBackwardChainingUTest::setUp()
+{
+	string cur_pp_dir = string(PROJECT_SOURCE_DIR),
+		cur_p_dir = cur_pp_dir + "/examples",
+		cur_dir = cur_p_dir + "/rule-engine";
+	vector<string> load_paths = {cur_pp_dir, cur_p_dir, cur_dir};
+	for (string& p : load_paths)
+	{
+		string eval_str = string("(add-to-load-path \"") + p + string("\")");
+		_eval.eval(eval_str);
+	}
+	_eval.eval("(use-modules (opencog))");
+	_eval.eval("(use-modules (opencog rule-engine))");
+	_eval.eval("(use-modules (opencog logger))");
+	_eval.eval("(use-modules (opencog rule-engine))");
+	_eval.eval("(use-modules (srfi srfi-1))");
+}
+
+void PLNBackwardChainingUTest::tearDown()
+{
+	_as.clear();
+}
+
+void PLNBackwardChainingUTest::load_scm_files(std::vector<std::string> files)
+{
+	std::string hd("(load-from-path \"");
+	std::string tl("\")");
+	for (auto f: files) {
+		string result = _eval.eval(hd + f + tl);
+		logger().debug() << "[PLNBackwardChainingUTest] Loaded \"" << f << "\":"
+		                 << std::endl << result;
+	}
+}
+
+
+
+
+void PLNBackwardChainingUTest::test_backward_chaining()
+{
+	logger().debug("BEGIN TEST: %s", __FUNCTION__);
+
+	_as.clear();
+	
+	load_scm_files({"examples/rule-engine/frog/knowledge-base.scm",
+			"examples/rule-engine/frog/rule-base.scm"
+				    });	
+
+
+	randGen().seed(0);
+
+	Handle top_rbs = _as.get_node(CONCEPT_NODE, UREConfigReader::top_rbs_name);
+
+	Handle green = an(CONCEPT_NODE, "green"),
+		Fritz = an(CONCEPT_NODE, "Fritz"),
+		what = an(VARIABLE_NODE, "$what"),
+		target = al(INHERITANCE_LINK, what, green),
+		concept = an(TYPE_NODE, "ConceptNode"),
+		vardecl = al(TYPED_VARIABLE_LINK, what, concept);
+
+	BackwardChainer bc(_as, top_rbs, target, vardecl);
+	bc.get_config().set_maximum_iterations(200);
+	bc.do_chain();
+
+	Handle results = bc.get_results(),
+		expected = al(SET_LINK, al(INHERITANCE_LINK, Fritz, green));
+
+	logger().debug() << "results = " << results->toString();
+	logger().debug() << "expected = " << expected->toString();
+
+	TS_ASSERT_EQUALS(results, expected);
+
+	logger().debug("END TEST: %s", __FUNCTION__);
+}
+

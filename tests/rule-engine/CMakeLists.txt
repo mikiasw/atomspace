@@ -11,5 +11,7 @@ ADD_CXXTEST(ChainerUtilsUTest)
 ADD_CXXTEST(UREConfigReaderUTest)
 ADD_CXXTEST(ForwardChainerUTest)
 ADD_CXXTEST(BackwardChainerUTest)
+
 ADD_CXXTEST(BITUTest)
 ADD_CXXTEST(RuleUTest)
+

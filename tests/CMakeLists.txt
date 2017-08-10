@@ -39,6 +39,7 @@ IF (CXXTEST_FOUND)
 	# Currently, reasoning depends on query, above.
 	IF (HAVE_GUILE)
 		ADD_SUBDIRECTORY (rule-engine)
+		ADD_SUBDIRECTORY (tutorial_test)
 	ENDIF (HAVE_GUILE)
 
 	IF (HAVE_CYTHON AND PYTHONINTERP_FOUND)

@@ -1,0 +1,108 @@
+#include <opencog/atoms/base/Handle.h>
+
+#include <opencog/rule-engine/backwardchainer/BackwardChainer.h>
+#include <opencog/rule-engine/backwardchainer/BackwardChainerPMCB.h>
+#include <opencog/guile/SchemeEval.h>
+#include <opencog/atomspace/AtomSpace.h>
+#include <opencog/atoms/pattern/PatternLink.h>
+#include <opencog/util/mt19937ar.h>
+#include <opencog/query/BindLinkAPI.h>
+
+
+#include <cxxtest/TestSuite.h>
+
+using namespace std;
+using namespace opencog;
+
+//#define DEBUG 1
+
+#define al _as.add_link
+#define an _as.add_node
+
+class plnBackwardChainigUTest: public CxxTest::TestSuite
+{
+private:
+	AtomSpace _as;
+	SchemeEval _eval;
+	BackwardChainer* _bc;
+
+	
+
+public:
+	plnBackwardChainigUTest() : _eval(&_as)
+	{
+		logger().set_level(Logger::DEBUG);
+		logger().set_timestamp_flag(false);
+		// logger().set_sync_flag(true);
+		// logger().set_print_to_stdout_flag(true);
+		randGen().seed(0);
+	}
+
+	void setUp();
+	void tearDown();
+
+	
+	void test_backward_chaining_2();
+	
+};
+
+void plnBackwardChainigUTest::setUp()
+{
+	string cur_pp_dir = string(PROJECT_SOURCE_DIR),
+		cur_p_dir = cur_pp_dir + "/examples",
+		cur_dir = cur_p_dir + "/rule-engine";
+	vector<string> load_paths = {cur_pp_dir, cur_p_dir, cur_dir};
+	for (string& p : load_paths)
+	{
+		string eval_str = string("(add-to-load-path \"") + p + string("\")");
+		_eval.eval(eval_str);
+	}
+	_eval.eval("(use-modules (opencog))");
+	_eval.eval("(use-modules (opencog rule-engine))");
+	_eval.eval("(use-modules (opencog logger))");
+	_eval.eval("(load-from-path \"examples/rule-engine/frog/knowledge-base.scm\")");
+	_eval.eval("(load-from-path \"examples/rule-engine/frog/rule-base.scm\")");
+	_eval.eval("(define target(InheritanceLink (VariableNode \"$what\") (ConceptNode \"green\")))");
+	_eval.eval("(define vd(TypedVariable (VariableNode \"$what\") (TypeNode \"ConceptNode\")))");
+
+}
+
+void plnBackwardChainigUTest::tearDown()
+{
+	_as.clear();
+}
+
+void plnBackwardChainigUTest::test_backward_chaining_2()
+{
+	logger().debug("BEGIN TEST: %s", __FUNCTION__);
+
+	
+
+	
+
+	//Handle top_rbs = _as.get_node(CONCEPT_NODE, UREConfigReader::top_rbs_name);
+
+	Handle green = an(CONCEPT_NODE, "green"),
+		Fritz = an(CONCEPT_NODE, "Fritz"),
+		what = an(VARIABLE_NODE, "$what"),
+		target = al(INHERITANCE_LINK, what, green),
+		concept = an(TYPE_NODE, "ConceptNode"),
+		vd = al(TYPED_VARIABLE_LINK, what, concept);
+
+	
+	
+		//Handle rule =_eval.eval_h("(cog-bc ci-rbs target #:vardecl vd)");
+                //Handle results = bindlink(&_as, rule);
+		
+		Handle results = _eval.eval_h("(cog-bc ci-rbs target #:vardecl vd)");
+                
+		Handle expected = al(SET_LINK, al(INHERITANCE_LINK, Fritz, green));
+
+	logger().debug() << "results = " << results->toString();
+	logger().debug() << "expected = " << expected->toString();
+
+	TS_ASSERT_EQUALS(results, expected);
+
+	logger().debug("END TEST: %s", __FUNCTION__);
+}
+
