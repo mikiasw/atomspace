@@ -1,3 +1,15 @@
+/***
+  *  tests/tutorial_test/pln/PlnByHandUTest.cxxtest
+  *  
+  *  This test is written to test the PLN example which is provided in PLN lesson 
+  *  on the Hands On With OpenCog tutorial  http://wiki.opencog.org/w/PLN_by_Hand
+  *
+  *  
+  *
+  *
+  *
+ */
+
 #include <opencog/guile/SchemeEval.h>
 #include <opencog/guile/SchemeSmob.h>
 #include <opencog/atoms/base/Handle.h>

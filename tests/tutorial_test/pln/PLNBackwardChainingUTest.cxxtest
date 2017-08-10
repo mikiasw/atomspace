@@ -1,3 +1,13 @@
+/***
+  *  tests/tutorial_test/pln/PLNBackwardChainingUTest.cxxtest
+  *  
+  *  This test is written to test PLN Backward Chaining which is provided in PLN lesson 
+  *  on the Hands On With OpenCog tutorial http://wiki.opencog.org/w/PLN_Backward_Chaining
+  *
+  *
+  *
+*/
+
 #include <opencog/rule-engine/backwardchainer/BackwardChainer.h>
 #include <opencog/rule-engine/backwardchainer/BackwardChainerPMCB.h>
 #include <opencog/guile/SchemeEval.h>
